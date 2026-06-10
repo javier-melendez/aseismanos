@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A Seis Manos | Almuerzos</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="restaurant-panel" aria-labelledby="restaurantName">
+        <div class="brand-block">
+          <span class="brand-mark">6</span>
+          <div>
+            <p class="eyebrow">Programa de fidelidad</p>
+            <h1 id="restaurantName">A Seis Manos</h1>
+          </div>
+        </div>
+
+        <div class="restaurant-card">
+          <p class="kicker">Restaurante</p>
+          <h2>Almuerzos caseros y menú del día</h2>
+          <p>
+            Dirección dummy: Calle 10 # 4-22, Bogotá. Horario: lunes a sábado,
+            11:30 a.m. a 3:30 p.m.
+          </p>
+          <dl>
+            <div>
+              <dt>Regla</dt>
+              <dd>10 almuerzos pagos = 1 almuerzo gratis</dd>
+            </div>
+            <div>
+              <dt>Códigos</dt>
+              <dd>Máximo 6 caracteres, con validación por fecha</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Aplicación de fidelidad">
+        <div class="tabs" role="tablist" aria-label="Tipo de usuario">
+          <button class="tab is-active" id="clientTab" type="button">Cliente</button>
+          <button class="tab" id="adminTab" type="button">Admin</button>
+        </div>
+
+        <section class="view is-active" id="clientView" aria-labelledby="clientTitle">
+          <div class="section-heading">
+            <p class="eyebrow">Cliente</p>
+            <h2 id="clientTitle">Consulta y registra almuerzos</h2>
+          </div>
+
+          <form class="form" id="clientForm">
+            <label for="customerId">Número de identificación</label>
+            <div class="inline-control">
+              <input
+                id="customerId"
+                name="customerId"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="Ej. 1020304050"
+                required
+              />
+              <button type="submit">Entrar</button>
+            </div>
+          </form>
+
+          <div class="empty-state" id="signedOutState">
+            Ingresa tu identificación para ver tu progreso.
+          </div>
+
+          <div class="customer-area" id="customerArea" hidden>
+            <div class="progress-grid">
+              <article class="metric">
+                <span>Almuerzos pagos</span>
+                <strong id="paidCount">0</strong>
+              </article>
+              <article class="metric">
+                <span>Gratis disponibles</span>
+                <strong id="freeCount">0</strong>
+              </article>
+              <article class="metric">
+                <span>Faltan</span>
+                <strong id="remainingCount">10</strong>
+              </article>
+            </div>
+
+            <div class="progress-track" aria-label="Progreso hacia almuerzo gratis">
+              <span id="progressBar"></span>
+            </div>
+
+            <form class="form redeem-form" id="redeemForm">
+              <label for="promoCode">Código promocional</label>
+              <div class="inline-control">
+                <input
+                  id="promoCode"
+                  name="promoCode"
+                  maxlength="6"
+                  autocomplete="one-time-code"
+                  placeholder="ABC123"
+                  required
+                />
+                <button type="submit">Registrar</button>
+              </div>
+              <p class="hint">
+                El código debe estar activo para la fecha de hoy y no haber sido usado.
+              </p>
+            </form>
+
+            <div class="activity">
+              <h3>Últimos movimientos</h3>
+              <ul id="customerLog"></ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="adminView" aria-labelledby="adminTitle">
+          <div class="section-heading">
+            <p class="eyebrow">Admin</p>
+            <h2 id="adminTitle">Generar y auditar códigos</h2>
+          </div>
+
+          <form class="form" id="adminLoginForm">
+            <label for="adminPassword">Contraseña</label>
+            <div class="inline-control">
+              <input
+                id="adminPassword"
+                name="adminPassword"
+                type="password"
+                autocomplete="current-password"
+                placeholder="admin"
+                required
+              />
+              <button type="submit">Entrar</button>
+            </div>
+          </form>
+
+          <div class="admin-area" id="adminArea" hidden>
+            <div class="admin-actions">
+              <form class="form compact" id="codeForm">
+                <label for="codeDate">Fecha válida</label>
+                <input id="codeDate" name="codeDate" type="date" required />
+                <button type="submit">Crear código</button>
+              </form>
+              <button class="secondary" id="refreshAdmin" type="button">Actualizar</button>
+            </div>
+
+            <div class="generated-code" id="generatedCode" hidden>
+              <span>Código creado</span>
+              <strong></strong>
+            </div>
+
+            <form class="form redeem-free" id="freeLunchForm">
+              <label for="freeCustomerId">Entregar almuerzo gratis</label>
+              <div class="inline-control">
+                <input
+                  id="freeCustomerId"
+                  name="freeCustomerId"
+                  autocomplete="off"
+                  placeholder="Identificación del cliente"
+                  required
+                />
+                <button type="submit">Marcar usado</button>
+              </div>
+              <p class="hint">Solo funciona si el cliente tiene almuerzos gratis disponibles.</p>
+            </form>
+
+            <div class="activity">
+              <h3>Códigos recientes</h3>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Fecha</th>
+                      <th>Estado</th>
+                      <th>Cliente</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminCodes"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

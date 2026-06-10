@@ -309,5 +309,5 @@ restoreAdminSession().catch(() => {
 });
 
 if (state.demoMode) {
-  showToast("Modo demo local. Configura Supabase en app.js para persistencia real.");
+  showToast("Modo demo local. Configura Supabase en supabase-config.js para persistencia real.");
 }

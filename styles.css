@@ -3,10 +3,10 @@
   --ink: #1f2528;
   --muted: #667176;
   --line: #d9e0df;
-  --paper: #fbfbf8;
+  --paper: #f7f7f2;
   --panel: #ffffff;
-  --accent: #2f7d6d;
-  --accent-dark: #1f5f53;
+  --accent: #2aa64d;
+  --accent-dark: #1b7d39;
   --warn: #a15c20;
   --soft: #edf5f1;
   --shadow: 0 18px 50px rgba(31, 37, 40, 0.12);
@@ -79,7 +79,7 @@ input:focus {
   gap: 28px;
   padding: clamp(24px, 5vw, 64px);
   background:
-    linear-gradient(rgba(31, 37, 40, 0.35), rgba(31, 37, 40, 0.62)),
+    linear-gradient(135deg, rgba(20, 25, 24, 0.72), rgba(18, 83, 42, 0.54)),
     url("https://images.unsplash.com/photo-1551218808-94e220e084d2?auto=format&fit=crop&w=1400&q=80")
       center/cover;
   color: #fff;
@@ -94,12 +94,20 @@ input:focus {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
-  border: 2px solid rgba(255, 255, 255, 0.72);
+  flex: 0 0 auto;
+  width: clamp(68px, 9vw, 96px);
+  height: clamp(68px, 9vw, 96px);
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.84);
   border-radius: 50%;
-  font-size: 1.6rem;
-  font-weight: 900;
+  background: #fff;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .eyebrow,
@@ -121,12 +129,13 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(2.2rem, 5vw, 4.8rem);
+  font-size: clamp(2rem, 5vw, 4.6rem);
   line-height: 0.95;
 }
 
 .restaurant-card {
   max-width: 520px;
+  text-wrap: pretty;
 }
 
 .restaurant-card h2 {
@@ -165,6 +174,7 @@ dd {
   position: relative;
   padding: clamp(18px, 4vw, 48px);
   align-self: center;
+  width: 100%;
 }
 
 .tabs {
@@ -237,6 +247,10 @@ dd {
   gap: 10px;
 }
 
+#assignLunchForm .inline-control {
+  grid-template-columns: minmax(0, 1fr) minmax(92px, 120px) auto;
+}
+
 .hint {
   color: var(--muted);
   font-size: 0.9rem;
@@ -303,6 +317,19 @@ dd {
   transition: width 180ms ease;
 }
 
+.notice {
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--soft);
+  padding: 14px 16px;
+}
+
+.notice p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .redeem-form {
   border-top: 1px solid var(--line);
   padding-top: 22px;
@@ -336,6 +363,14 @@ dd {
   border-radius: 8px;
   padding: 12px;
   color: var(--muted);
+}
+
+.activity li span:first-child {
+  min-width: 0;
+}
+
+.activity li span:last-child {
+  flex: 0 0 auto;
 }
 
 .admin-actions {
@@ -429,16 +464,68 @@ tr:last-child td {
   }
 
   .restaurant-panel {
-    min-height: 42vh;
+    min-height: auto;
   }
 
   .workspace {
     align-self: auto;
   }
+
+  .restaurant-card {
+    max-width: 680px;
+  }
 }
 
 @media (max-width: 560px) {
+  body {
+    background: var(--panel);
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .restaurant-panel {
+    gap: 22px;
+    padding: 22px 18px;
+  }
+
+  .brand-block {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 64px;
+    height: 64px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .restaurant-card h2 {
+    font-size: 1.7rem;
+    line-height: 1.08;
+  }
+
+  .workspace {
+    padding: 16px;
+  }
+
+  .view {
+    padding: 18px;
+    border-radius: 0;
+    border-right: 0;
+    border-left: 0;
+    box-shadow: none;
+  }
+
+  .section-heading h2 {
+    font-size: 1.45rem;
+  }
+
   .inline-control,
+  #assignLunchForm .inline-control,
   .admin-login-grid,
   .admin-actions,
   .compact,
@@ -448,5 +535,10 @@ tr:last-child td {
 
   .metric span {
     min-height: auto;
+  }
+
+  .activity li {
+    display: grid;
+    gap: 6px;
   }
 }

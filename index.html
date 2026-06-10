@@ -11,7 +11,9 @@
     <main class="app-shell">
       <section class="restaurant-panel" aria-labelledby="restaurantName">
         <div class="brand-block">
-          <span class="brand-mark">6</span>
+          <span class="brand-mark" aria-hidden="true">
+            <img src="./img/image.png" alt="" />
+          </span>
           <div>
             <p class="eyebrow">Programa de fidelidad</p>
             <h1 id="restaurantName">A Seis Manos</h1>
@@ -19,11 +21,11 @@
         </div>
 
         <div class="restaurant-card">
-          <p class="kicker">Restaurante</p>
-          <h2>Almuerzos caseros y menú del día</h2>
+          <p class="kicker">Restaurante / espacio cultural</p>
+          <h2>Almuerzos con beneficios para clientes frecuentes</h2>
           <p>
-            Dirección dummy: Calle 10 # 4-22, Bogotá. Horario: lunes a sábado,
-            11:30 a.m. a 3:30 p.m.
+            Consulta tu avance con tu identificación. El equipo registra cada compra y el sistema
+            calcula automáticamente los almuerzos gratis disponibles.
           </p>
           <dl>
             <div>
@@ -47,7 +49,7 @@
         <section class="view is-active" id="clientView" aria-labelledby="clientTitle">
           <div class="section-heading">
             <p class="eyebrow">Cliente</p>
-            <h2 id="clientTitle">Consulta y registra almuerzos</h2>
+            <h2 id="clientTitle">Consulta tus almuerzos acumulados</h2>
           </div>
 
           <form class="form" id="clientForm">
@@ -106,7 +108,7 @@
         <section class="view" id="adminView" aria-labelledby="adminTitle">
           <div class="section-heading">
             <p class="eyebrow">Admin</p>
-            <h2 id="adminTitle">Asignar almuerzos y auditar cuentas</h2>
+            <h2 id="adminTitle">Registrar compras y entregar beneficios</h2>
           </div>
 
           <form class="form" id="adminLoginForm">

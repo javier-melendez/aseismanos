@@ -1,20 +1,12 @@
-const CONFIG = {
+const CONFIG = window.APP_CONFIG || {
   supabaseUrl: "https://YOUR_PROJECT.supabase.co",
   supabaseAnonKey: "YOUR_SUPABASE_ANON_KEY",
-  adminPassword: "admin",
 };
 
 const $ = (selector) => document.querySelector(selector);
-const todayIso = () => {
-  const now = new Date();
-  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return localDate.toISOString().slice(0, 10);
-};
-
 const state = {
   customerId: localStorage.getItem("loyalty_customer_id") || "",
-  adminToken: sessionStorage.getItem("loyalty_admin_token") || "",
-  adminPassword: "",
+  isAdmin: false,
   client: null,
   demoMode: false,
 };
@@ -62,13 +54,12 @@ function normalizeCode(code) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 }
 
-function codePool(dateIso) {
+function codePool() {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const seed = Number(dateIso.replaceAll("-", ""));
   const codes = [];
 
   for (let index = 0; index < 10000; index += 1) {
-    let value = (seed * 1103515245 + index * 2654435761) >>> 0;
+    let value = ((index + 1) * 2654435761) >>> 0;
     let code = "";
     for (let charIndex = 0; charIndex < 6; charIndex += 1) {
       value = (value * 1664525 + 1013904223) >>> 0;
@@ -100,7 +91,6 @@ async function demoApi(method, payload) {
     const code = normalizeCode(payload.p_code);
     const item = demoDb.codes.find((entry) => entry.code === code);
     if (!item) throw new Error("Código inexistente.");
-    if (item.valid_on !== todayIso()) throw new Error("El código no está activo para hoy.");
     if (item.used_at) throw new Error("Este código ya fue usado.");
 
     const customer = demoDb.customers[payload.p_customer_id] || { paid_count: 0, free_count: 0, log: [] };
@@ -122,15 +112,14 @@ async function demoApi(method, payload) {
   }
 
   if (method === "create_lunch_code") {
-    if (payload.p_admin_password !== CONFIG.adminPassword) throw new Error("Contraseña inválida.");
-    const pool = codePool(payload.p_valid_on);
+    if (!state.isAdmin) throw new Error("Debes iniciar sesión como administrador.");
+    const pool = codePool();
     const used = new Set(demoDb.codes.map((entry) => entry.code));
     const code = pool.find((candidate) => !used.has(candidate));
-    if (!code) throw new Error("No quedan códigos disponibles para esta fecha.");
+    if (!code) throw new Error("No quedan códigos disponibles.");
 
     const item = {
       code,
-      valid_on: payload.p_valid_on,
       used_at: null,
       used_by: null,
       created_at: new Date().toISOString(),
@@ -141,12 +130,12 @@ async function demoApi(method, payload) {
   }
 
   if (method === "list_lunch_codes") {
-    if (payload.p_admin_password !== CONFIG.adminPassword) throw new Error("Contraseña inválida.");
+    if (!state.isAdmin) throw new Error("Debes iniciar sesión como administrador.");
     return demoDb.codes.slice(0, 30);
   }
 
   if (method === "redeem_free_lunch") {
-    if (payload.p_admin_password !== CONFIG.adminPassword) throw new Error("Contraseña inválida.");
+    if (!state.isAdmin) throw new Error("Debes iniciar sesión como administrador.");
     const customer = demoDb.customers[payload.p_customer_id];
     if (!customer || customer.free_count < 1) {
       throw new Error("Este cliente no tiene almuerzos gratis disponibles.");
@@ -199,7 +188,7 @@ function renderAdminCodes(codes) {
             const status = item.used_at ? "Usado" : "Disponible";
             return `<tr>
               <td><strong>${item.code}</strong></td>
-              <td>${item.valid_on}</td>
+              <td>${new Date(item.created_at).toLocaleDateString("es-CO")}</td>
               <td>${status}</td>
               <td>${item.used_by || "-"}</td>
             </tr>`;
@@ -215,16 +204,24 @@ async function loadCustomer() {
 }
 
 async function loadAdminCodes() {
-  const codes = await api("list_lunch_codes", {
-    p_admin_password: state.adminPassword,
-  });
+  const codes = await api("list_lunch_codes");
   renderAdminCodes(codes || []);
+}
+
+async function restoreAdminSession() {
+  if (state.demoMode) return;
+
+  const { data } = await state.client.auth.getSession();
+  if (!data.session) return;
+
+  state.isAdmin = true;
+  $("#adminArea").hidden = false;
+  await loadAdminCodes();
 }
 
 function wireEvents() {
   $("#clientTab").addEventListener("click", () => setView("client"));
   $("#adminTab").addEventListener("click", () => setView("admin"));
-  $("#codeDate").value = todayIso();
 
   $("#clientForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -252,7 +249,6 @@ function wireEvents() {
       const summary = await api("redeem_lunch_code", {
         p_customer_id: state.customerId,
         p_code: code,
-        p_client_date: todayIso(),
       });
       renderCustomer(summary);
       $("#promoCode").value = "";
@@ -264,30 +260,29 @@ function wireEvents() {
 
   $("#adminLoginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const email = $("#adminEmail").value.trim();
     const password = $("#adminPassword").value;
-    if (password !== CONFIG.adminPassword) {
-      showToast("Contraseña inválida.");
-      return;
-    }
-    state.adminPassword = password;
-    state.adminToken = "local-admin";
-    sessionStorage.setItem("loyalty_admin_token", state.adminToken);
-    $("#adminArea").hidden = false;
-    showToast("Admin activo.");
+
     try {
+      if (state.demoMode) {
+        if (password !== "admin") throw new Error("Contraseña inválida.");
+      } else {
+        if (!email) throw new Error("Ingresa el correo del administrador.");
+        const { error } = await state.client.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+      }
+      state.isAdmin = true;
+      $("#adminArea").hidden = false;
       await loadAdminCodes();
+      showToast("Admin activo.");
     } catch (error) {
       showToast(error.message);
     }
   });
 
-  $("#codeForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
+  $("#createCodeButton").addEventListener("click", async () => {
     try {
-      const item = await api("create_lunch_code", {
-        p_admin_password: state.adminPassword,
-        p_valid_on: $("#codeDate").value,
-      });
+      const item = await api("create_lunch_code");
       $("#generatedCode").hidden = false;
       $("#generatedCode strong").textContent = item.code;
       await loadAdminCodes();
@@ -310,7 +305,6 @@ function wireEvents() {
     event.preventDefault();
     try {
       await api("redeem_free_lunch", {
-        p_admin_password: state.adminPassword,
         p_customer_id: $("#freeCustomerId").value.trim(),
       });
       if ($("#freeCustomerId").value.trim() === state.customerId) {
@@ -327,6 +321,10 @@ function wireEvents() {
 initSupabase();
 wireEvents();
 loadCustomer().catch((error) => showToast(error.message));
+restoreAdminSession().catch(() => {
+  state.isAdmin = false;
+  $("#adminArea").hidden = true;
+});
 
 if (state.demoMode) {
   showToast("Modo demo local. Configura Supabase en app.js para persistencia real.");

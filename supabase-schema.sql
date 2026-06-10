@@ -1,5 +1,11 @@
 create extension if not exists pgcrypto;
 
+drop function if exists public.create_lunch_code(text, date);
+drop function if exists public.create_lunch_code(date);
+drop function if exists public.list_lunch_codes(text);
+drop function if exists public.redeem_free_lunch(text, text);
+drop function if exists public.redeem_lunch_code(text, text, date);
+
 create table if not exists public.restaurant_settings (
   id boolean primary key default true,
   name text not null default 'A Seis Manos',
@@ -19,7 +25,6 @@ create table if not exists public.customers (
 
 create table if not exists public.lunch_codes (
   code text primary key check (code ~ '^[A-Z0-9]{4,6}$'),
-  valid_on date not null,
   created_at timestamptz not null default now(),
   used_at timestamptz,
   used_by text references public.customers(customer_id),
@@ -27,6 +32,9 @@ create table if not exists public.lunch_codes (
     (used_at is null and used_by is null) or (used_at is not null and used_by is not null)
   )
 );
+
+alter table public.lunch_codes
+drop column if exists valid_on;
 
 create table if not exists public.customer_events (
   id uuid primary key default gen_random_uuid(),
@@ -36,25 +44,41 @@ create table if not exists public.customer_events (
   happened_at timestamptz not null default now()
 );
 
-create or replace function public.restaurant_today()
-returns date
-language sql
-stable
-as $$
-  select timezone('America/Bogota', now())::date;
-$$;
+create table if not exists public.app_admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  created_at timestamptz not null default now()
+);
 
 alter table public.restaurant_settings enable row level security;
 alter table public.customers enable row level security;
 alter table public.lunch_codes enable row level security;
 alter table public.customer_events enable row level security;
+alter table public.app_admins enable row level security;
 
 drop policy if exists "public can read restaurant settings" on public.restaurant_settings;
 create policy "public can read restaurant settings"
 on public.restaurant_settings for select
 using (true);
 
-create or replace function public.valid_code_pool(p_valid_on date)
+create or replace function public.require_admin()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null or not exists (
+    select 1
+    from public.app_admins
+    where user_id = auth.uid()
+  ) then
+    raise exception 'No autorizado.';
+  end if;
+end;
+$$;
+
+create or replace function public.valid_code_pool()
 returns table(code text)
 language sql
 stable
@@ -69,7 +93,7 @@ as $$
     select
       encode(
         digest(
-          'aseismanos:' || p_valid_on::text || ':' || index::text,
+          'aseismanos:' || index::text,
           'sha256'
         ),
         'hex'
@@ -132,10 +156,7 @@ begin
 end;
 $$;
 
-create or replace function public.create_lunch_code(
-  p_admin_password text,
-  p_valid_on date default public.restaurant_today()
-)
+create or replace function public.create_lunch_code()
 returns jsonb
 language plpgsql
 security definer
@@ -144,13 +165,11 @@ as $$
 declare
   new_code text;
 begin
-  if p_admin_password <> 'admin' then
-    raise exception 'Contraseña inválida.';
-  end if;
+  perform public.require_admin();
 
   select pool.code
   into new_code
-  from public.valid_code_pool(p_valid_on) pool
+  from public.valid_code_pool() pool
   where not exists (
     select 1 from public.lunch_codes existing where existing.code = pool.code
   )
@@ -158,11 +177,11 @@ begin
   limit 1;
 
   if new_code is null then
-    raise exception 'No quedan códigos disponibles para esta fecha.';
+    raise exception 'No quedan códigos disponibles.';
   end if;
 
-  insert into public.lunch_codes(code, valid_on)
-  values (new_code, p_valid_on);
+  insert into public.lunch_codes(code)
+  values (new_code);
 
   return (
     select to_jsonb(created_code)
@@ -172,16 +191,14 @@ begin
 end;
 $$;
 
-create or replace function public.list_lunch_codes(p_admin_password text)
+create or replace function public.list_lunch_codes()
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  if p_admin_password <> 'admin' then
-    raise exception 'Contraseña inválida.';
-  end if;
+  perform public.require_admin();
 
   return coalesce(
     (
@@ -200,8 +217,7 @@ $$;
 
 create or replace function public.redeem_lunch_code(
   p_customer_id text,
-  p_code text,
-  p_client_date date default public.restaurant_today()
+  p_code text
 )
 returns jsonb
 language plpgsql
@@ -214,10 +230,6 @@ declare
   new_paid integer;
   new_free integer;
 begin
-  if p_client_date <> public.restaurant_today() then
-    raise exception 'La fecha del dispositivo no coincide con la fecha del servidor.';
-  end if;
-
   select *
   into code_record
   from public.lunch_codes
@@ -226,10 +238,6 @@ begin
 
   if not found then
     raise exception 'Código inexistente.';
-  end if;
-
-  if code_record.valid_on <> public.restaurant_today() then
-    raise exception 'El código no está activo para hoy.';
   end if;
 
   if code_record.used_at is not null then
@@ -270,7 +278,6 @@ end;
 $$;
 
 create or replace function public.redeem_free_lunch(
-  p_admin_password text,
   p_customer_id text
 )
 returns jsonb
@@ -279,9 +286,7 @@ security definer
 set search_path = public
 as $$
 begin
-  if p_admin_password <> 'admin' then
-    raise exception 'Contraseña inválida.';
-  end if;
+  perform public.require_admin();
 
   update public.customers
   set free_count = free_count - 1,
@@ -303,12 +308,17 @@ $$;
 revoke all on public.customers from anon, authenticated;
 revoke all on public.lunch_codes from anon, authenticated;
 revoke all on public.customer_events from anon, authenticated;
+revoke all on public.app_admins from anon, authenticated;
+
+revoke execute on function public.create_lunch_code() from public, anon;
+revoke execute on function public.list_lunch_codes() from public, anon;
+revoke execute on function public.redeem_free_lunch(text) from public, anon;
 
 grant execute on function public.get_customer_summary(text) to anon, authenticated;
-grant execute on function public.create_lunch_code(text, date) to anon, authenticated;
-grant execute on function public.list_lunch_codes(text) to anon, authenticated;
-grant execute on function public.redeem_lunch_code(text, text, date) to anon, authenticated;
-grant execute on function public.redeem_free_lunch(text, text) to anon, authenticated;
+grant execute on function public.create_lunch_code() to authenticated;
+grant execute on function public.list_lunch_codes() to authenticated;
+grant execute on function public.redeem_lunch_code(text, text) to anon, authenticated;
+grant execute on function public.redeem_free_lunch(text) to authenticated;
 
 insert into public.restaurant_settings(id)
 values (true)

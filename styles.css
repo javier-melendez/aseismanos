@@ -231,6 +231,12 @@ dd {
   gap: 10px;
 }
 
+.admin-login-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
 .hint {
   color: var(--muted);
   font-size: 0.9rem;
@@ -334,7 +340,7 @@ dd {
 
 .admin-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto auto;
   gap: 12px;
   align-items: end;
 }
@@ -433,6 +439,7 @@ tr:last-child td {
 
 @media (max-width: 560px) {
   .inline-control,
+  .admin-login-grid,
   .admin-actions,
   .compact,
   .progress-grid {

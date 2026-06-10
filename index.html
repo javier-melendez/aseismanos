@@ -32,7 +32,7 @@
             </div>
             <div>
               <dt>Códigos</dt>
-              <dd>Máximo 6 caracteres, con validación por fecha</dd>
+              <dd>Máximo 6 caracteres, únicos y de un solo uso</dd>
             </div>
           </dl>
         </div>
@@ -103,7 +103,7 @@
                 <button type="submit">Registrar</button>
               </div>
               <p class="hint">
-                El código debe estar activo para la fecha de hoy y no haber sido usado.
+                El código debe existir y no haber sido usado antes.
               </p>
             </form>
 
@@ -121,14 +121,21 @@
           </div>
 
           <form class="form" id="adminLoginForm">
-            <label for="adminPassword">Contraseña</label>
-            <div class="inline-control">
+            <label for="adminEmail">Credenciales de administrador</label>
+            <div class="admin-login-grid">
+              <input
+                id="adminEmail"
+                name="adminEmail"
+                type="email"
+                autocomplete="email"
+                placeholder="admin@restaurante.com"
+              />
               <input
                 id="adminPassword"
                 name="adminPassword"
                 type="password"
                 autocomplete="current-password"
-                placeholder="admin"
+                placeholder="Contraseña"
                 required
               />
               <button type="submit">Entrar</button>
@@ -137,11 +144,7 @@
 
           <div class="admin-area" id="adminArea" hidden>
             <div class="admin-actions">
-              <form class="form compact" id="codeForm">
-                <label for="codeDate">Fecha válida</label>
-                <input id="codeDate" name="codeDate" type="date" required />
-                <button type="submit">Crear código</button>
-              </form>
+              <button id="createCodeButton" type="button">Crear código</button>
               <button class="secondary" id="refreshAdmin" type="button">Actualizar</button>
             </div>
 
@@ -172,7 +175,7 @@
                   <thead>
                     <tr>
                       <th>Código</th>
-                      <th>Fecha</th>
+                      <th>Creado</th>
                       <th>Estado</th>
                       <th>Cliente</th>
                     </tr>
@@ -188,6 +191,7 @@
       </section>
     </main>
 
+    <script src="./supabase-config.js"></script>
     <script src="./app.js" defer></script>
   </body>
 </html>

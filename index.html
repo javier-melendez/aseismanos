@@ -31,8 +31,8 @@
               <dd>10 almuerzos pagos = 1 almuerzo gratis</dd>
             </div>
             <div>
-              <dt>Códigos</dt>
-              <dd>Máximo 6 caracteres, únicos y de un solo uso</dd>
+              <dt>Gestión</dt>
+              <dd>El admin asigna almuerzos por cédula y el cliente solo consulta su saldo.</dd>
             </div>
           </dl>
         </div>
@@ -89,23 +89,12 @@
               <span id="progressBar"></span>
             </div>
 
-            <form class="form redeem-form" id="redeemForm">
-              <label for="promoCode">Código promocional</label>
-              <div class="inline-control">
-                <input
-                  id="promoCode"
-                  name="promoCode"
-                  maxlength="6"
-                  autocomplete="one-time-code"
-                  placeholder="ABC123"
-                  required
-                />
-                <button type="submit">Registrar</button>
-              </div>
-              <p class="hint">
-                El código debe existir y no haber sido usado antes.
+            <div class="notice">
+              <p>
+                Ingresa tu número de identificación para ver cuántos almuerzos tienes acumulados y cuántos
+                faltan para el próximo almuerzo gratis.
               </p>
-            </form>
+            </div>
 
             <div class="activity">
               <h3>Últimos movimientos</h3>
@@ -117,7 +106,7 @@
         <section class="view" id="adminView" aria-labelledby="adminTitle">
           <div class="section-heading">
             <p class="eyebrow">Admin</p>
-            <h2 id="adminTitle">Generar y auditar códigos</h2>
+            <h2 id="adminTitle">Asignar almuerzos y auditar cuentas</h2>
           </div>
 
           <form class="form" id="adminLoginForm">
@@ -143,14 +132,32 @@
           </form>
 
           <div class="admin-area" id="adminArea" hidden>
-            <div class="admin-actions">
-              <button id="createCodeButton" type="button">Crear código</button>
-              <button class="secondary" id="refreshAdmin" type="button">Actualizar</button>
-            </div>
+            <form class="form" id="assignLunchForm">
+              <label for="assignCustomerId">Asignar almuerzos a cliente</label>
+              <div class="inline-control">
+                <input
+                  id="assignCustomerId"
+                  name="assignCustomerId"
+                  autocomplete="off"
+                  placeholder="Identificación del cliente"
+                  required
+                />
+                <input
+                  id="assignQuantity"
+                  name="assignQuantity"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value="1"
+                  required
+                />
+                <button type="submit">Asignar</button>
+              </div>
+              <p class="hint">Asignar almuerzos pagos al cliente para acumular hacia un gratis.</p>
+            </form>
 
-            <div class="generated-code" id="generatedCode" hidden>
-              <span>Código creado</span>
-              <strong></strong>
+            <div class="admin-actions">
+              <button class="secondary" id="refreshAdmin" type="button">Actualizar</button>
             </div>
 
             <form class="form redeem-free" id="freeLunchForm">
@@ -169,18 +176,17 @@
             </form>
 
             <div class="activity">
-              <h3>Códigos recientes</h3>
+              <h3>Últimos movimientos</h3>
               <div class="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>Código</th>
-                      <th>Creado</th>
-                      <th>Estado</th>
                       <th>Cliente</th>
+                      <th>Evento</th>
+                      <th>Fecha</th>
                     </tr>
                   </thead>
-                  <tbody id="adminCodes"></tbody>
+                  <tbody id="adminEvents"></tbody>
                 </table>
               </div>
             </div>

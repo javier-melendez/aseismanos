@@ -22,6 +22,8 @@ Abre `index.html` en el navegador. Si no has configurado Supabase, la app corre 
    set email = excluded.email;
    ```
 
+La app ahora funciona sin códigos para el cliente: el admin asigna los almuerzos a cada cuenta por cédula y el cliente solo consulta su saldo.
+
    Si Supabase tiene confirmación de email activa, confirma ese usuario antes de probar el login.
 
 5. En `supabase-config.js`, reemplaza:
@@ -41,10 +43,8 @@ La `anon public key` de Supabase puede estar en `supabase-config.js`; está dise
 
 ## Seguridad implementada
 
-- Los códigos son alfanuméricos, de máximo 6 caracteres.
-- La piscina de códigos se limita a 10.000 candidatos.
-- Cada código solo puede usarse una vez.
-- Los códigos usados quedan bloqueados con `used_at` y `used_by`.
+- El admin puede asignar almuerzos pagos directamente al cliente.
+- Cuando el cliente completa 10 almuerzos pagos, obtiene un almuerzo gratis automáticamente.
 - El admin puede marcar un almuerzo gratis como entregado, descontándolo del saldo del cliente.
 - El admin usa Supabase Auth y debe estar registrado en `public.app_admins`.
 - Las tablas sensibles no tienen acceso directo para `anon`; la app usa funciones RPC con `security definer`.
